@@ -1,26 +1,36 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	"log"
+
+	"github.com/Pranay0205/velo/backend/database"
+	"github.com/Pranay0205/velo/backend/handlers"
+	"github.com/joho/godotenv"
+
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/healthcheck"
 )
 
 func main() {
+
+	// Load environment variables from .env file
+	err := godotenv.Load()
+
+	if err != nil {
+		log.Fatal("Error loading .env file - make sure it exists and is properly formatted")
+	}
+
+	db, err := database.ConnectDB()
+
+	authHandler := &handlers.AuthHandler{DB: db}
+
 	app := fiber.New()
 
-	// Middleware
-	app.Use(logger.New())
+	app.Get(healthcheck.LivenessEndpoint, healthcheck.New())
 
-	// TODO: Create a custom middleware that checks the 'X-Velo-Burnout' header.
-	// If the user's "Burnout Score" is too high, it should inject a
-	// message into the response suggesting they take a break.
+	app.Get("/signup", authHandler.Signup)
 
-	app.Get("/api/tasks", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "Velo API is online",
-			"tasks":   []string{"Task 1", "Task 2"},
-		})
-	})
+	app.Get("/healthz", healthcheck.New())
 
 	app.Listen(":3000")
 }
