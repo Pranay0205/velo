@@ -7,6 +7,10 @@ import (
 )
 
 func HashPassword(password string) (string, error) {
+	if password == "" {
+		return "", fmt.Errorf("password cannot be empty")
+	}
+
 	if len(password) < 8 {
 		return "", fmt.Errorf("password must be at least 8 characters long")
 	}
@@ -17,4 +21,11 @@ func HashPassword(password string) (string, error) {
 	}
 
 	return string(bcryptHash), nil
+}
+
+func CheckPasswordHash(password, hash []byte) bool {
+
+	err := bcrypt.CompareHashAndPassword(hash, []byte(password))
+
+	return err == nil
 }

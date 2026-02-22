@@ -2,9 +2,11 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/Pranay0205/velo/backend/database"
 	"github.com/Pranay0205/velo/backend/handlers"
+	"github.com/Pranay0205/velo/backend/middleware"
 	"github.com/joho/godotenv"
 
 	"github.com/gofiber/fiber/v3"
@@ -22,15 +24,25 @@ func main() {
 
 	db, err := database.ConnectDB()
 
-	authHandler := &handlers.AuthHandler{DB: db}
+	authHandler := &handlers.AuthHandler{DB: db, JWTSecret: os.Getenv("JWT_SECRET")}
 
 	app := fiber.New()
 
+	app.Get("/healthz", healthcheck.New())
+
 	app.Get(healthcheck.LivenessEndpoint, healthcheck.New())
+
+	app.Get("/signup", authHandler.Login)
 
 	app.Get("/signup", authHandler.Signup)
 
-	app.Get("/healthz", healthcheck.New())
+	api := app.Group("/api", middleware.AuthMiddleware(os.Getenv("JWT_SECRET")))
+
+	api.Get("/Goals", func(c fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"message": "This is a protected route",
+		})
+	})
 
 	app.Listen(":3000")
 }

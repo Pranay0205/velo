@@ -4,21 +4,29 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type User struct {
-	ID           uuid.UUID `json:"id"`
+	ID           uuid.UUID `json:"id" gorm:"type:uuid;primaryKey"`
 	Name         string    `json:"name"`
 	LastName     string    `json:"last_name"`
-	Email        string    `json:"email"`
+	Email        string    `json:"email" gorm:"uniqueIndex"`
 	PasswordHash string    `json:"-"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	CreatedAt    time.Time `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt    time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+}
+
+func (u *User) BeforeCreate(tx *gorm.DB) error {
+	if u.ID == uuid.Nil {
+		u.ID = uuid.New()
+	}
+	return nil
 }
 
 type Task struct {
 	ID           uuid.UUID `json:"id"`
-	User         uuid.UUID `json:"userID"`
+	UserID       uuid.UUID `json:"userID"`
 	GoalID       uuid.UUID `json:"goal_id"`
 	Title        string    `json:"title"`
 	Description  string    `json:"description"`
@@ -30,9 +38,16 @@ type Task struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+func (u *Task) BeforeCreate(tx *gorm.DB) error {
+	if u.ID == uuid.Nil {
+		u.ID = uuid.New()
+	}
+	return nil
+}
+
 type Goal struct {
 	ID                 uuid.UUID `json:"id"`
-	User               uuid.UUID `json:"userID"`
+	UserID             uuid.UUID `json:"userID"`
 	Title              string    `json:"title"`
 	Description        string    `json:"description"`
 	Deadline           time.Time `json:"deadline"`
@@ -42,4 +57,11 @@ type Goal struct {
 	CurrentMetric      int       `json:"current_metric"`
 	UpdatedAt          time.Time `json:"updated_at"`
 	CreatedAt          time.Time `json:"created_at"`
+}
+
+func (u *Goal) BeforeCreate(tx *gorm.DB) error {
+	if u.ID == uuid.Nil {
+		u.ID = uuid.New()
+	}
+	return nil
 }

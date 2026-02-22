@@ -26,7 +26,7 @@ func TestHashPassword(t *testing.T) {
 
 func TestHashPasswordEmpty(t *testing.T) {
 	_, err := HashPassword("")
-	if err != nil {
+	if err == nil {
 		t.Fatal("HashPassword should handle empty string:", err)
 	}
 }

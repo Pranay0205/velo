@@ -23,7 +23,7 @@ func setupTestApp(t *testing.T) *fiber.App {
 
 	handler := &handlers.AuthHandler{DB: db}
 	app := fiber.New()
-	app.Post("/api/signup", handler.Signup)
+	app.Post("/signup", handler.Signup)
 	return app
 }
 
@@ -37,7 +37,7 @@ func TestSignupSuccess(t *testing.T) {
 		"password":  "password123",
 	})
 
-	req, _ := http.NewRequest("POST", "/api/signup", bytes.NewReader(body))
+	req, _ := http.NewRequest("POST", "/signup", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)
@@ -61,12 +61,12 @@ func TestSignupDuplicateEmail(t *testing.T) {
 		"password":  "password123",
 	})
 
-	req, _ := http.NewRequest("POST", "/api/signup", bytes.NewReader(body))
+	req, _ := http.NewRequest("POST", "/signup", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	app.Test(req)
 
 	// Second signup with same email
-	req2, _ := http.NewRequest("POST", "/api/signup", bytes.NewReader(body))
+	req2, _ := http.NewRequest("POST", "/signup", bytes.NewReader(body))
 	req2.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req2)
 	if err != nil {
@@ -81,7 +81,7 @@ func TestSignupDuplicateEmail(t *testing.T) {
 func TestSignupInvalidBody(t *testing.T) {
 	app := setupTestApp(t)
 
-	req, _ := http.NewRequest("POST", "/api/signup", bytes.NewReader([]byte("not json")))
+	req, _ := http.NewRequest("POST", "/signup", bytes.NewReader([]byte("not json")))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)
