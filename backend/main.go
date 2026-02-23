@@ -32,9 +32,9 @@ func main() {
 
 	app.Get(healthcheck.LivenessEndpoint, healthcheck.New())
 
-	app.Get("/signup", authHandler.Login)
+	app.Post("/api/login", authHandler.Login)
 
-	app.Get("/signup", authHandler.Signup)
+	app.Post("/api/signup", authHandler.Signup)
 
 	api := app.Group("/api", middleware.AuthMiddleware(os.Getenv("JWT_SECRET")))
 
@@ -43,6 +43,8 @@ func main() {
 			"message": "This is a protected route",
 		})
 	})
+
+	api.Get("/me", authHandler.Me)
 
 	app.Listen(":3000")
 }

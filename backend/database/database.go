@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/Pranay0205/velo/backend/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -29,6 +30,8 @@ func ConnectDB() (*gorm.DB, error) {
 	}
 
 	log.Println("Database connection established")
+
+	db.AutoMigrate(&models.User{}, &models.Goal{}, &models.Task{})
 
 	return db, nil
 }
