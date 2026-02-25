@@ -22,14 +22,13 @@ export default function Layout() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {/* Status Indicator (Focused/Lost/Burnt Out) will go here */}
-            <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-            <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Focused</span>
+            <span className="text-xs text-zinc-500 tracking-widest">
+              <h1 className="text-2xl py-4">Hello, {user?.name}!</h1>
+            </span>
           </div>
         </div>
       </nav>
       <main className="max-w-5xl mx-auto px-4 py-8">
-        <h1 className="text-2xl py-4">Hello, {user?.name}!</h1>
         <Outlet />
       </main>
     </div>
@@ -46,7 +45,6 @@ export default function Layout() {
       ) : (
         layout
       )}
-      )
     </>
   );
 }

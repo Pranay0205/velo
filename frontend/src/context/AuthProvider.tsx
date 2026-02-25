@@ -1,6 +1,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AuthContext } from "./AuthContext";
+import { logger } from "@/lib/logger";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { data, isLoading } = useQuery({
@@ -11,10 +12,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (!response.ok) {
+        logger.error("Failed to fetch user data:", response.statusText);
         return null;
       }
 
       const result = await response.json();
+      logger.log("Authenticated User:", result);
       return result.data;
     },
     retry: false,

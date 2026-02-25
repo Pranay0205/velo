@@ -1,6 +1,6 @@
 # Write Command For Running Backend
 run-backend:
-	cd backend && go run .
+	cd backend && air
 
 # Write Command For Running Frontend
 run-frontend:
