@@ -30,13 +30,8 @@ export default function Login() {
   const navigate = useNavigate();
 
   type LoginResponse = {
-    data: {
-      message: string;
-      user: {
-        email: string;
-        name: string;
-      };
-    };
+    email: string;
+    name: string;
   };
 
   const { mutate, isPending } = useMutation({
@@ -52,13 +47,13 @@ export default function Login() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed");
+        throw new Error(errorData.error || "Signup failed");
       }
-
-      return response.json();
+      const result = await response.json();
+      return result.data;
     },
     onSuccess: (data: LoginResponse) => {
-      toast.success(`Welcome back, ${data.data.user.name}!`);
+      toast.success(`Welcome back, ${data.name}!`);
       logger.log("Login response:", data);
       navigate("/");
     },

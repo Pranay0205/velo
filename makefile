@@ -1,10 +1,14 @@
 # Write Command For Running Backend
 run-backend:
+	cd backend && go run main.go
+
+run-backend-dev:
 	cd backend && air
 
 # Write Command For Running Frontend
 run-frontend:
 	cd frontend && npm run dev
+
 
 # How to run the commands:
 # 1. Open a terminal and navigate to the project directory

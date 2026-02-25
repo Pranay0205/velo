@@ -4,6 +4,7 @@ import (
 	"github.com/Pranay0205/velo/backend/auth"
 	"github.com/Pranay0205/velo/backend/utils"
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 )
 
 func AuthMiddleware(JWTSecret string) fiber.Handler {
@@ -19,7 +20,12 @@ func AuthMiddleware(JWTSecret string) fiber.Handler {
 			return utils.RespondError(c, fiber.StatusUnauthorized, "Invalid auth token")
 		}
 
-		c.Locals("userID", claims.UserID)
+		parsedID, err := uuid.Parse(claims.UserID)
+		if err != nil {
+			return utils.RespondError(c, fiber.StatusUnauthorized, "Invalid user ID in token")
+		}
+
+		c.Locals("userID", parsedID)
 
 		return c.Next()
 	}

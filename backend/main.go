@@ -24,7 +24,12 @@ func main() {
 
 	db, err := database.ConnectDB()
 
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
+
 	authHandler := &handlers.AuthHandler{DB: db, JWTSecret: os.Getenv("JWT_SECRET")}
+	goalHandler := &handlers.GoalHandler{DB: db}
 
 	app := fiber.New()
 
@@ -38,11 +43,13 @@ func main() {
 
 	api := app.Group("/api", middleware.AuthMiddleware(os.Getenv("JWT_SECRET")))
 
-	api.Get("/Goals", func(c fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "This is a protected route",
-		})
-	})
+	api.Get("/goals", goalHandler.GetGoals)
+
+	api.Post("/goals", goalHandler.CreateGoal)
+
+	api.Put("/goals/:id", goalHandler.UpdateGoal)
+
+	api.Delete("/goals/:id", goalHandler.DeleteGoal)
 
 	api.Get("/me", authHandler.Me)
 

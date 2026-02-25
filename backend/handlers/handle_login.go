@@ -55,10 +55,7 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 	c.Cookie(cookie)
 
 	return utils.RespondSuccess(c, fiber.StatusOK, fiber.Map{
-		"message": "Login successful!",
-		"user": fiber.Map{
-			"email": user.Email,
-			"name":  user.Name,
-		},
+		"email": user.Email,
+		"name":  user.Name,
 	})
 }

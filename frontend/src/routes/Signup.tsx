@@ -67,10 +67,11 @@ export default function Signup() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Signup failed");
+        throw new Error(errorData.error || "Signup failed");
       }
 
-      return response.json();
+      const result = await response.json();
+      return result.data;
     },
     onSuccess: (data) => {
       toast.success("Account created! Please log in.");

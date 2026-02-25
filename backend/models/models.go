@@ -46,17 +46,17 @@ func (u *Task) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Goal struct {
-	ID                 uuid.UUID `json:"id"`
-	UserID             uuid.UUID `json:"userID"`
-	Title              string    `json:"title"`
-	Description        string    `json:"description"`
-	Deadline           time.Time `json:"deadline"`
-	IsRecurring        bool      `json:"is_recurring"`
-	RecurrenceInterval string    `json:"recurrence_interval,omitempty"` // "daily", "weekly"
-	TargetMetric       int       `json:"target_metric"`                 // e.g. 100% or 50 tasks
-	CurrentMetric      int       `json:"current_metric"`
-	UpdatedAt          time.Time `json:"updated_at"`
-	CreatedAt          time.Time `json:"created_at"`
+	ID          uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID      uuid.UUID  `gorm:"type:uuid;not null" json:"user_id"`
+	Title       string     `gorm:"not null" json:"title"`
+	Description string     `json:"description"`
+	GoalType    string     `gorm:"column:goal_type;not null" json:"goal_type"`
+	Status      string     `gorm:"not null;default:'active'" json:"status"` // active, paused, completed
+	Deadline    *time.Time `json:"deadline"`
+	Frequency    *int       `json:"frequency"` // times per week
+	LastActiveAt *time.Time `json:"last_active_at"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
 func (u *Goal) BeforeCreate(tx *gorm.DB) error {
