@@ -1,21 +1,24 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logger } from "@/lib/logger";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -36,6 +39,18 @@ type Goal = {
   updated_at: string;
 };
 
+type Task = {
+  id: string;
+  goal_id: string;
+  title: string;
+  description: string | null;
+  deadline: string | null;
+  user_priority: number; // 1-3: Low, Med, High
+  is_completed: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 const goalFormScheme = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
@@ -46,10 +61,26 @@ const goalFormScheme = z.object({
 
 type GoalForm = z.infer<typeof goalFormScheme>;
 
+const typeOptions = [
+  { value: "deadline", label: "Deadline" },
+  { value: "habit", label: "Habit" },
+  { value: "exploration", label: "Exploration" },
+];
+
+const priorityOptions = [
+  { value: 1, label: "Low", className: "bg-green-50 dark:bg-green-800" },
+  { value: 2, label: "Medium", className: "bg-green-50 dark:bg-green-800" },
+  { value: 3, label: "High", className: "bg-green-50 dark:bg-green-800" },
+];
+
 export default function Goals() {
   const queryClient = useQueryClient();
 
   const [open, setOpen] = useState(false);
+
+  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+
+  const [newTaskTitle, setNewTaskTitle] = useState("");
 
   const form = useForm<GoalForm>({
     resolver: zodResolver(goalFormScheme),
@@ -62,6 +93,76 @@ export default function Goals() {
 
   const goalType = form.watch("goal_type");
 
+  // Get goals for the logged in user
+  const { data: goals, isLoading } = useQuery({
+    queryKey: ["goals"],
+    queryFn: async () => {
+      const response = await fetch("/api/goals", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        logger.error("Failed to fetch goals:", errorData);
+        return null;
+      }
+
+      const result = await response.json();
+      logger.log("Fetched goals:", result);
+      return result.data;
+    },
+    retry: false,
+  });
+
+  // Get tasks for the selected goal
+  const { data: tasks, isLoading: tasksLoading } = useQuery({
+    queryKey: ["tasks", selectedGoal?.id],
+    queryFn: async () => {
+      if (!selectedGoal) return null;
+
+      const response = await fetch(`/api/tasks?goal_id=${selectedGoal.id}`, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        logger.error("Failed to fetch tasks:", errorData);
+        return null;
+      }
+
+      const result = await response.json();
+      logger.log("Fetched tasks:", result);
+      return result.data;
+    },
+    enabled: !!selectedGoal,
+  });
+
+  // Complete Task
+  const { mutate: completeTask } = useMutation({
+    mutationFn: async ({ taskId, isComplete }: { taskId: string; isComplete: boolean }) => {
+      const response = await fetch(`/api/tasks/${taskId}/complete`, {
+        method: "PATCH",
+        credentials: "include",
+        body: JSON.stringify({ is_completed: !isComplete }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        logger.error("Failed to complete task:", errorData);
+        throw new Error(errorData.error || "Failed to complete task");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", selectedGoal?.id] });
+      toast.success("Task marked as completed!");
+    },
+    onError: (error: Error) => {
+      logger.error("Error completing task:", error);
+      toast.error("Failed to complete task. Please try again later.");
+    },
+  });
+
+  // Create new goal
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: GoalForm) => {
       const response = await fetch("/api/goals", {
@@ -95,26 +196,40 @@ export default function Goals() {
     },
   });
 
-  const { data: goals, isLoading } = useQuery({
-    queryKey: ["goals"],
-    queryFn: async () => {
-      const response = await fetch("/api/goals", {
+  // Create new task
+  const { mutate: createTask } = useMutation({
+    mutationFn: async (data: { title: string; goal_id?: string; user_priority: number }) => {
+      const response = await fetch("/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        logger.error("Failed to fetch goals:", errorData);
-        return null;
+        logger.error("Failed to create task:", errorData);
+        throw new Error(errorData.error || "Failed to create task");
       }
 
       const result = await response.json();
-      logger.log("Fetched goals:", result);
       return result.data;
     },
-    retry: false,
+    onSuccess: (data: Task) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", selectedGoal?.id] });
+      logger.log("Created task:", data);
+      toast.success("Task created!");
+      setNewTaskTitle("");
+    },
+    onError: (error: Error) => {
+      logger.error("Error creating task:", error);
+      toast.error("Failed to create task. Please try again later.");
+    },
   });
 
+  // Delete goal
   const { mutate: deleteGoal } = useMutation({
     mutationFn: async (goalId: string) => {
       const response = await fetch(`/api/goals/${goalId}`, {
@@ -148,6 +263,21 @@ export default function Goals() {
     };
     mutate(payload);
   };
+
+  const onCompleteTask = (taskId: string, isComplete: boolean) => {
+    completeTask({ taskId, isComplete });
+  };
+
+  const onCreateTask = (title: string) => {
+    if (selectedGoal) {
+      createTask({ title, goal_id: selectedGoal.id, user_priority: 2 });
+    }
+  };
+
+  const sortedTasks = [...(tasks ?? [])].sort((a: Task, b: Task) => {
+    if (a.is_completed !== b.is_completed) return Number(a.is_completed) - Number(b.is_completed);
+    return b.user_priority - a.user_priority; // higher priority first
+  });
 
   const newGoalPopup = (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -216,9 +346,11 @@ export default function Goals() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                      <SelectItem value="deadline">Deadline</SelectItem>
-                      <SelectItem value="habit">Habit</SelectItem>
-                      <SelectItem value="exploration">Exploration</SelectItem>
+                      {typeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -285,7 +417,7 @@ export default function Goals() {
       ) : goals && goals.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {goals.map((goal: Goal) => (
-            <Card key={goal.id} className="bg-zinc-900 border-zinc-800">
+            <Card key={goal.id} onClick={() => setSelectedGoal(goal)} className="bg-zinc-900 border-zinc-800">
               <CardHeader className="flex flex-row justify-between items-start">
                 <h2 className="text-white font-medium">{goal.title}</h2>
                 <Button variant="ghost" size="icon" onClick={() => deleteGoal(goal.id)}>
@@ -305,6 +437,87 @@ export default function Goals() {
       ) : (
         <p>No goals found. Start by creating a new goal!</p>
       )}
+
+      <Dialog open={!!selectedGoal} onOpenChange={(open) => !open && setSelectedGoal(null)}>
+        <DialogContent className="text-white bg-zinc-900 border-zinc-800 w-full">
+          <DialogHeader>
+            <DialogTitle>{selectedGoal?.title}</DialogTitle>
+            <DialogDescription className="text-sm text-zinc-400">{selectedGoal?.description}</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 mt-4 text-white">
+            <div>
+              <span className="text-zinc-500 text-sm">Type:</span>{" "}
+              <Badge variant="outline">{selectedGoal?.goal_type}</Badge>
+            </div>
+            <div>
+              <span className="text-zinc-500 text-sm">Status:</span>{" "}
+              <Badge variant="outline">{selectedGoal?.status}</Badge>
+            </div>
+            {selectedGoal?.deadline && (
+              <div>
+                <span className="text-zinc-500 text-sm">Deadline:</span>{" "}
+                {new Date(selectedGoal.deadline).toLocaleDateString()}
+              </div>
+            )}
+            {selectedGoal?.frequency && (
+              <div>
+                <span className="text-zinc-500 text-sm">Frequency:</span> {selectedGoal.frequency} times/week
+              </div>
+            )}
+
+            {/* TODO: Task list here */}
+
+            <div className="mt-4">
+              <h3 className="text-sm font-medium text-zinc-400 mb-2">Tasks</h3>
+              {tasksLoading ? (
+                <p className="text-zinc-500 text-sm">Loading...</p>
+              ) : sortedTasks && sortedTasks.length > 0 ? (
+                sortedTasks.map((task: Task) => (
+                  <div key={task.id} className="flex items-center gap-2 py-2">
+                    <Checkbox checked={task.is_completed} onClick={() => onCompleteTask(task.id, task.is_completed)} />
+                    <span className={task.is_completed ? "line-through text-zinc-600" : "text-white"}>
+                      {task.title}
+                    </span>
+                    <Badge variant="outline" className="ml-auto">
+                      {priorityOptions.find((option) => option.value === task.user_priority)?.label}
+                    </Badge>
+                  </div>
+                ))
+              ) : (
+                <p className="text-zinc-600 text-sm">No tasks yet.</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <div className="w-full">
+              <InputGroup>
+                <InputGroupInput
+                  placeholder="Add a task..."
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newTaskTitle.trim()) {
+                      onCreateTask(newTaskTitle.trim());
+                    }
+                  }}
+                />
+                <InputGroupAddon align="inline-end">
+                  <ArrowUp
+                    className="cursor-pointer"
+                    onClick={() => {
+                      if (newTaskTitle.trim()) {
+                        onCreateTask(newTaskTitle.trim());
+                      }
+                    }}
+                  />
+                </InputGroupAddon>
+              </InputGroup>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
