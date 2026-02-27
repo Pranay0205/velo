@@ -86,7 +86,7 @@ func (g *GoalHandler) GetGoals(c fiber.Ctx) error {
 	}
 
 	var goals []models.Goal
-	if err := g.DB.Where("user_id = ?", userID).Find(&goals).Error; err != nil {
+	if err := g.DB.Where("user_id = ? AND status != ?", userID, "abandoned").Find(&goals).Error; err != nil {
 		return utils.RespondError(c, fiber.StatusInternalServerError, "Failed to retrieve goals")
 	}
 

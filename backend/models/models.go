@@ -51,9 +51,9 @@ type Goal struct {
 	Title       string     `gorm:"not null" json:"title"`
 	Description string     `json:"description"`
 	GoalType    string     `gorm:"column:goal_type;not null" json:"goal_type"`
-	Status      string     `gorm:"not null;default:'active'" json:"status"` // active, paused, completed
+	Status      string     `gorm:"not null;default:'active'" json:"status"` 
 	Deadline    *time.Time `json:"deadline"`
-	Frequency    *int       `json:"frequency"` // times per week
+	Frequency    *int       `json:"frequency"` 
 	LastActiveAt *time.Time `json:"last_active_at"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
