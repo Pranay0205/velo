@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import type { Task } from "@/types";
 import { useTasks } from "@/hooks/useTasks";
+import UrgencyBadge from "@/components/UrgencyBadge";
 export default function Daily() {
   // Get tasks for the selected goal
   const { tasks, isLoading: tasksLoading, completeTask } = useTasks();
@@ -40,9 +41,12 @@ export default function Daily() {
                       {task.title}
                     </span>
                   </div>
-                  <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px] px-2 py-0">
-                    {task.user_priority === 3 ? "HIGH" : task.user_priority === 2 ? "MED" : "LOW"}
-                  </Badge>
+                  <div className="flex items-end gap-2">
+                    <Badge variant="outline" className="border-zinc-700 text-zinc-500 text-[10px] px-2 py-0">
+                      {task.user_priority === 3 ? "HIGH" : task.user_priority === 2 ? "MED" : "LOW"}
+                    </Badge>
+                    <UrgencyBadge className="text-[10px] px-2 py-0" urgency={task.ai_urgency} />
+                  </div>
                 </div>
               ))}
             </CardContent>

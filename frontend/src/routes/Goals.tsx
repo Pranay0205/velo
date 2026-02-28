@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -13,19 +12,21 @@ import {
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logger } from "@/lib/logger";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUp, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import type { Task, Goal } from "@/types";
+import type { Goal } from "@/types";
 import { toast } from "sonner";
 import z from "zod";
-import { useTasks } from "@/hooks/useTasks";
+
 import { Progress } from "@/components/ui/progress";
+
+import GoalTaskList from "@/components/GoalTaskList";
 
 const goalFormScheme = z.object({
   title: z.string().min(1, "Title is required"),
@@ -43,20 +44,12 @@ const typeOptions = [
   { value: "exploration", label: "Exploration" },
 ];
 
-const priorityOptions = [
-  { value: 1, label: "Low", className: "bg-green-50 dark:bg-green-800" },
-  { value: 2, label: "Medium", className: "bg-green-50 dark:bg-green-800" },
-  { value: 3, label: "High", className: "bg-green-50 dark:bg-green-800" },
-];
-
 export default function Goals() {
   const queryClient = useQueryClient();
 
   const [open, setOpen] = useState(false);
 
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
-
-  const [newTaskTitle, setNewTaskTitle] = useState("");
 
   const form = useForm<GoalForm>({
     resolver: zodResolver(goalFormScheme),
@@ -157,18 +150,6 @@ export default function Goals() {
         }),
     };
     mutate(payload);
-  };
-
-  const { tasks, isLoading: tasksLoading, completeTask, createTask } = useTasks(selectedGoal?.id);
-
-  const onCompleteTask = (taskId: string, isComplete: boolean) => {
-    completeTask({ taskId, isComplete });
-  };
-
-  const onCreateTask = (title: string) => {
-    if (selectedGoal) {
-      createTask({ title, goal_id: selectedGoal.id });
-    }
   };
 
   const newGoalPopup = (
@@ -367,57 +348,9 @@ export default function Goals() {
                 <span className="text-zinc-500 text-sm">Frequency:</span> {selectedGoal.frequency} times/week
               </div>
             )}
-
-            {/* TODO: Task list here */}
-
-            <div className="mt-4">
-              <h3 className="text-sm font-medium text-zinc-400 mb-2">Tasks</h3>
-              {tasksLoading ? (
-                <p className="text-zinc-500 text-sm">Loading...</p>
-              ) : tasks && tasks.length > 0 ? (
-                tasks.map((task: Task) => (
-                  <div key={task.id} className="flex items-center gap-2 py-2">
-                    <Checkbox checked={task.is_completed} onClick={() => onCompleteTask(task.id, task.is_completed)} />
-                    <span className={task.is_completed ? "line-through text-zinc-600" : "text-white"}>
-                      {task.title}
-                    </span>
-                    <Badge variant="outline" className="ml-auto">
-                      {priorityOptions.find((option) => option.value === task.user_priority)?.label}
-                    </Badge>
-                  </div>
-                ))
-              ) : (
-                <p className="text-zinc-600 text-sm">No tasks yet.</p>
-              )}
-            </div>
           </div>
 
-          <DialogFooter>
-            <div className="w-full">
-              <InputGroup>
-                <InputGroupInput
-                  placeholder="Add a task..."
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && newTaskTitle.trim()) {
-                      onCreateTask(newTaskTitle.trim());
-                    }
-                  }}
-                />
-                <InputGroupAddon align="inline-end">
-                  <ArrowUp
-                    className="cursor-pointer"
-                    onClick={() => {
-                      if (newTaskTitle.trim()) {
-                        onCreateTask(newTaskTitle.trim());
-                      }
-                    }}
-                  />
-                </InputGroupAddon>
-              </InputGroup>
-            </div>
-          </DialogFooter>
+          <div className="mt-4">{selectedGoal && <GoalTaskList goal={selectedGoal} />}</div>
         </DialogContent>
       </Dialog>
     </div>

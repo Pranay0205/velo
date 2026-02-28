@@ -21,6 +21,7 @@ export type Task = {
   description: string | null;
   deadline: string | null;
   user_priority: number; // 1-3: Low, Med, High
+  ai_urgency: number; // 1-10, calculated by backend
   is_completed: boolean;
   created_at: string;
   updated_at: string;

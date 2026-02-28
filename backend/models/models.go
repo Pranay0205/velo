@@ -25,17 +25,18 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Task struct {
-	ID           uuid.UUID `json:"id"`
-	UserID       uuid.UUID `json:"userID"`
-	GoalID       uuid.UUID `json:"goal_id"`
-	Title        string    `json:"title"`
-	Description  string    `json:"description"`
-	Deadline     time.Time `json:"deadline"`
-	UserPriority int       `json:"user_priority"` // 1-3: Low, Med, High
-	AIUrgency    int       `json:"ai_urgency"`    // 1-10: Calculated engine pressure
-	IsCompleted  bool      `json:"is_completed"`
-	UpdatedAt    time.Time `json:"updated_at"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID             uuid.UUID `json:"id"`
+	UserID         uuid.UUID `json:"userID"`
+	GoalID         uuid.UUID `json:"goal_id"`
+	Title          string    `json:"title"`
+	Description    string    `json:"description"`
+	Deadline       time.Time `json:"deadline"`
+	EstimatedHours *float64  `json:"estimated_hours" gorm:"default:null"`
+	UserPriority   int       `json:"user_priority"` // 1-3: Low, Med, High
+	AIUrgency      int       `json:"ai_urgency"`    // 1-10: Calculated engine pressure
+	IsCompleted    bool      `json:"is_completed"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 func (u *Task) BeforeCreate(tx *gorm.DB) error {
@@ -46,14 +47,14 @@ func (u *Task) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Goal struct {
-	ID          uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
-	UserID      uuid.UUID  `gorm:"type:uuid;not null" json:"user_id"`
-	Title       string     `gorm:"not null" json:"title"`
-	Description string     `json:"description"`
-	GoalType    string     `gorm:"column:goal_type;not null" json:"goal_type"`
-	Status      string     `gorm:"not null;default:'active'" json:"status"` 
-	Deadline    *time.Time `json:"deadline"`
-	Frequency    *int       `json:"frequency"` 
+	ID           uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID       uuid.UUID  `gorm:"type:uuid;not null" json:"user_id"`
+	Title        string     `gorm:"not null" json:"title"`
+	Description  string     `json:"description"`
+	GoalType     string     `gorm:"column:goal_type;not null" json:"goal_type"`
+	Status       string     `gorm:"not null;default:'active'" json:"status"`
+	Deadline     *time.Time `json:"deadline"`
+	Frequency    *int       `json:"frequency"`
 	LastActiveAt *time.Time `json:"last_active_at"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`

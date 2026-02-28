@@ -3,6 +3,7 @@ package handlers
 import (
 	"time"
 
+	"github.com/Pranay0205/velo/backend/engine"
 	"github.com/Pranay0205/velo/backend/models"
 	"github.com/Pranay0205/velo/backend/utils"
 	"github.com/gofiber/fiber/v3"
@@ -85,8 +86,10 @@ func (t *TaskHandler) GetTasks(c fiber.Ctx) error {
 		return utils.RespondError(c, fiber.StatusUnauthorized, "Invalid user session")
 	}
 
+	// Base query to get tasks for the user
 	query := t.DB.Where("user_id = ?", userID)
 
+	// Optional filtering by goal ID
 	if goalID := c.Query("goal_id"); goalID != "" {
 		parsedGoalID, err := uuid.Parse(goalID)
 		if err != nil {
@@ -95,9 +98,55 @@ func (t *TaskHandler) GetTasks(c fiber.Ctx) error {
 		query = query.Where("goal_id = ?", parsedGoalID)
 	}
 
+	// Storing tasks in a slice
 	var tasks []models.Task
 	if err := query.Find(&tasks).Error; err != nil {
 		return utils.RespondError(c, fiber.StatusInternalServerError, "Failed to retrieve tasks")
+	}
+
+	// Get all goals for the user and store them to slice to calculate metrics
+	var goals []models.Goal
+	if err := t.DB.Where("user_id = ?", userID).Find(&goals).Error; err != nil {
+		return utils.RespondError(c, fiber.StatusInternalServerError, "Failed to retrieve goals")
+	}
+
+	// Calculate metrics for each goal
+	type GoalMetrics struct {
+		GoalID         uuid.UUID `json:"goal_id"`
+		TotalTasks     int       `json:"total_tasks"`
+		CompletedTasks int       `json:"completed_tasks"`
+	}
+
+	// Get task counts for each goal
+	var metrics []GoalMetrics
+	t.DB.Model(&models.Task{}).
+		Select("goal_id, COUNT(*) as total_tasks, COUNT(CASE WHEN is_completed = true THEN 1 END) as completed_tasks").
+		Where("user_id = ?", userID).
+		Group("goal_id").
+		Scan(&metrics)
+
+	// Create maps for easy lookup
+	goalMap := make(map[uuid.UUID]models.Goal)
+	for _, g := range goals {
+		goalMap[g.ID] = g
+	}
+
+	// Map to store metrics by goal ID
+	metricsMap := make(map[uuid.UUID]GoalMetrics)
+	for _, m := range metrics {
+		metricsMap[m.GoalID] = m
+	}
+
+	for i, task := range tasks {
+		if goal, exists := goalMap[task.GoalID]; exists {
+			if m, exists := metricsMap[task.GoalID]; exists {
+				newUrgency := engine.CalculateUrgency(task, goal, m.TotalTasks, m.CompletedTasks)
+				if newUrgency != task.AIUrgency {
+					tasks[i].AIUrgency = newUrgency
+					t.DB.Model(&tasks[i]).Update("ai_urgency", newUrgency)
+				}
+			}
+		}
 	}
 
 	return utils.RespondSuccess(c, fiber.StatusOK, tasks)
