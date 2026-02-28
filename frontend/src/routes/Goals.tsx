@@ -21,35 +21,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-
+import type { Task, Goal } from "@/types";
 import { toast } from "sonner";
 import z from "zod";
-
-type Goal = {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string;
-  goal_type: "deadline" | "habit" | "exploration";
-  status: "not_started" | "in_progress" | "completed" | "abandoned";
-  deadline: string | null;
-  frequency: number | null;
-  last_active_at: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-type Task = {
-  id: string;
-  goal_id: string;
-  title: string;
-  description: string | null;
-  deadline: string | null;
-  user_priority: number; // 1-3: Low, Med, High
-  is_completed: boolean;
-  created_at: string;
-  updated_at: string;
-};
+import { useTasks } from "@/hooks/useTasks";
+import { Progress } from "@/components/ui/progress";
 
 const goalFormScheme = z.object({
   title: z.string().min(1, "Title is required"),
@@ -114,54 +90,6 @@ export default function Goals() {
     retry: false,
   });
 
-  // Get tasks for the selected goal
-  const { data: tasks, isLoading: tasksLoading } = useQuery({
-    queryKey: ["tasks", selectedGoal?.id],
-    queryFn: async () => {
-      if (!selectedGoal) return null;
-
-      const response = await fetch(`/api/tasks?goal_id=${selectedGoal.id}`, {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        logger.error("Failed to fetch tasks:", errorData);
-        return null;
-      }
-
-      const result = await response.json();
-      logger.log("Fetched tasks:", result);
-      return result.data;
-    },
-    enabled: !!selectedGoal,
-  });
-
-  // Complete Task
-  const { mutate: completeTask } = useMutation({
-    mutationFn: async ({ taskId, isComplete }: { taskId: string; isComplete: boolean }) => {
-      const response = await fetch(`/api/tasks/${taskId}/complete`, {
-        method: "PATCH",
-        credentials: "include",
-        body: JSON.stringify({ is_completed: !isComplete }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        logger.error("Failed to complete task:", errorData);
-        throw new Error(errorData.error || "Failed to complete task");
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", selectedGoal?.id] });
-      toast.success("Task marked as completed!");
-    },
-    onError: (error: Error) => {
-      logger.error("Error completing task:", error);
-      toast.error("Failed to complete task. Please try again later.");
-    },
-  });
-
   // Create new goal
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: GoalForm) => {
@@ -193,39 +121,6 @@ export default function Goals() {
     onError: (error: Error) => {
       logger.error("Error fetching goals:", error);
       toast.error("Failed to create goals. Please try again later.");
-    },
-  });
-
-  // Create new task
-  const { mutate: createTask } = useMutation({
-    mutationFn: async (data: { title: string; goal_id?: string; user_priority: number }) => {
-      const response = await fetch("/api/tasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        logger.error("Failed to create task:", errorData);
-        throw new Error(errorData.error || "Failed to create task");
-      }
-
-      const result = await response.json();
-      return result.data;
-    },
-    onSuccess: (data: Task) => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", selectedGoal?.id] });
-      logger.log("Created task:", data);
-      toast.success("Task created!");
-      setNewTaskTitle("");
-    },
-    onError: (error: Error) => {
-      logger.error("Error creating task:", error);
-      toast.error("Failed to create task. Please try again later.");
     },
   });
 
@@ -264,20 +159,17 @@ export default function Goals() {
     mutate(payload);
   };
 
+  const { tasks, isLoading: tasksLoading, completeTask, createTask } = useTasks(selectedGoal?.id);
+
   const onCompleteTask = (taskId: string, isComplete: boolean) => {
     completeTask({ taskId, isComplete });
   };
 
   const onCreateTask = (title: string) => {
     if (selectedGoal) {
-      createTask({ title, goal_id: selectedGoal.id, user_priority: 2 });
+      createTask({ title, goal_id: selectedGoal.id });
     }
   };
-
-  const sortedTasks = [...(tasks ?? [])].sort((a: Task, b: Task) => {
-    if (a.is_completed !== b.is_completed) return Number(a.is_completed) - Number(b.is_completed);
-    return b.user_priority - a.user_priority; // higher priority first
-  });
 
   const newGoalPopup = (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -415,9 +307,17 @@ export default function Goals() {
       {isLoading ? (
         <p>Loading goals...</p>
       ) : goals && goals.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ">
           {goals.map((goal: Goal) => (
-            <Card key={goal.id} onClick={() => setSelectedGoal(goal)} className="bg-zinc-900 border-zinc-800">
+            <Card
+              key={goal.id}
+              onClick={() => setSelectedGoal(goal)}
+              className="bg-zinc-900 border-zinc-800 relative rounded-t-none"
+            >
+              <Progress
+                className="absolute top-0 left-0 right-0 h-1 bg-zinc-800 rounded-none"
+                value={goal.total_tasks > 0 ? (goal.completed_tasks / goal.total_tasks) * 100 : 0}
+              />
               <CardHeader className="flex flex-row justify-between items-start">
                 <h2 className="text-white font-medium">{goal.title}</h2>
                 <Button variant="ghost" size="icon" onClick={() => deleteGoal(goal.id)}>
@@ -427,9 +327,11 @@ export default function Goals() {
               <CardContent>
                 <p className="text-zinc-400 text-sm">{goal.description}</p>
               </CardContent>
-              <CardFooter className="flex gap-2 mt-2">
-                <Badge variant="outline">{goal.goal_type}</Badge>
-                <Badge variant="outline">{goal.status}</Badge>
+              <CardFooter className="flex flex-col items-start gap-3">
+                <div className="flex gap-2">
+                  <Badge variant="outline">{goal.goal_type}</Badge>
+                  <Badge variant="outline">{goal.status}</Badge>
+                </div>
               </CardFooter>
             </Card>
           ))}
@@ -472,8 +374,8 @@ export default function Goals() {
               <h3 className="text-sm font-medium text-zinc-400 mb-2">Tasks</h3>
               {tasksLoading ? (
                 <p className="text-zinc-500 text-sm">Loading...</p>
-              ) : sortedTasks && sortedTasks.length > 0 ? (
-                sortedTasks.map((task: Task) => (
+              ) : tasks && tasks.length > 0 ? (
+                tasks.map((task: Task) => (
                   <div key={task.id} className="flex items-center gap-2 py-2">
                     <Checkbox checked={task.is_completed} onClick={() => onCompleteTask(task.id, task.is_completed)} />
                     <span className={task.is_completed ? "line-through text-zinc-600" : "text-white"}>

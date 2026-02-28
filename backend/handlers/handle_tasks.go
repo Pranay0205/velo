@@ -149,9 +149,8 @@ func (t *TaskHandler) UpdateTask(c fiber.Ctx) error {
 		if _, ok = userPriority[*req.UserPriority]; !ok {
 			return utils.RespondError(c, fiber.StatusBadRequest, "User priority must be between low and high")
 		}
+		task.UserPriority = *req.UserPriority
 	}
-
-	task.UserPriority = *req.UserPriority
 
 	if req.IsCompleted != nil {
 		task.IsCompleted = *req.IsCompleted

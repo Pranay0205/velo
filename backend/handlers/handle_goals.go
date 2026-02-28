@@ -90,7 +90,41 @@ func (g *GoalHandler) GetGoals(c fiber.Ctx) error {
 		return utils.RespondError(c, fiber.StatusInternalServerError, "Failed to retrieve goals")
 	}
 
-	return utils.RespondSuccess(c, fiber.StatusOK, goals)
+	type GoalMetrics struct {
+		GoalID         uuid.UUID `json:"goal_id"`
+		TotalTasks     int       `json:"total_tasks"`
+		CompletedTasks int       `json:"completed_tasks"`
+	}
+
+	var metrics []GoalMetrics
+	g.DB.Model(&models.Task{}).
+		Select("goal_id, COUNT(*) as total_tasks, COUNT(CASE WHEN is_completed = true THEN 1 END) as completed_tasks").
+		Where("user_id = ?", userID).
+		Group("goal_id").
+		Scan(&metrics)
+
+	metricsMap := make(map[uuid.UUID]GoalMetrics)
+	for _, m := range metrics {
+		metricsMap[m.GoalID] = m
+	}
+
+	type GoalWithMetrics struct {
+		models.Goal
+		TotalTasks     int `json:"total_tasks"`
+		CompletedTasks int `json:"completed_tasks"`
+	}
+
+	var response []GoalWithMetrics
+	for _, goal := range goals {
+		m := metricsMap[goal.ID]
+		response = append(response, GoalWithMetrics{
+			Goal:           goal,
+			TotalTasks:     m.TotalTasks,
+			CompletedTasks: m.CompletedTasks,
+		})
+	}
+
+	return utils.RespondSuccess(c, fiber.StatusOK, response)
 }
 
 // Method to update a specific goal
