@@ -31,7 +31,7 @@ func ConnectDB() (*gorm.DB, error) {
 
 	log.Println("Database connection established")
 
-	db.AutoMigrate(&models.User{}, &models.Goal{}, &models.Task{})
+	db.AutoMigrate(&models.User{}, &models.Goal{}, &models.Task{}, &models.ChatMessage{})
 
 	return db, nil
 }

@@ -66,3 +66,18 @@ func (u *Goal) BeforeCreate(tx *gorm.DB) error {
 	}
 	return nil
 }
+
+type ChatMessage struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null" json:"user_id"`
+	Message   string    `gorm:"not null" json:"message"`
+	Role      string    `gorm:"not null" json:"role"` // "user" or "assistant"
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (u *ChatMessage) BeforeCreate(tx *gorm.DB) error {
+	if u.ID == uuid.Nil {
+		u.ID = uuid.New()
+	}
+	return nil
+}

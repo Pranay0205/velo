@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/Pranay0205/velo/backend/llm"
 	"gorm.io/gorm"
 )
 
@@ -15,4 +16,9 @@ type GoalHandler struct {
 
 type TaskHandler struct {
 	DB *gorm.DB
+}
+
+type ChatHandler struct {
+	DB     *gorm.DB
+	Gemini *llm.GeminiClient
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/Pranay0205/velo/backend/database"
 	"github.com/Pranay0205/velo/backend/handlers"
+	"github.com/Pranay0205/velo/backend/llm"
 	"github.com/Pranay0205/velo/backend/middleware"
 	"github.com/joho/godotenv"
 
@@ -32,6 +33,16 @@ func main() {
 	authHandler := &handlers.AuthHandler{DB: db, JWTSecret: os.Getenv("JWT_SECRET")}
 	goalHandler := &handlers.GoalHandler{DB: db}
 	taskHandler := &handlers.TaskHandler{DB: db}
+
+	geminiClient, err := llm.NewGeminiClient()
+	if err != nil {
+		log.Fatal("Failed to create Gemini client:", err)
+	}
+
+	chatHandler := &handlers.ChatHandler{
+		DB:     db,
+		Gemini: geminiClient,
+	}
 
 	app := fiber.New()
 	app.Use(logger.New())
@@ -63,6 +74,8 @@ func main() {
 	api.Put("/tasks/:id", taskHandler.UpdateTask)
 
 	api.Delete("/tasks/:id", taskHandler.DeleteTask)
+
+	api.Post("/chat", chatHandler.Chat)
 
 	api.Get("/me", authHandler.Me)
 
