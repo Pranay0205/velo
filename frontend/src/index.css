@@ -96,3 +96,29 @@
     --sidebar-ring: oklch(0.439 0 0);
   }
 }
+
+@layer utilities {
+  .chat-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(6 182 212 / 0.6) rgb(39 39 42 / 0.6);
+  }
+
+  .chat-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-track {
+    background: rgb(39 39 42 / 0.5);
+    border-radius: 9999px;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, rgb(34 211 238 / 0.9), rgb(8 145 178 / 0.9));
+    border-radius: 9999px;
+    border: 1px solid rgb(39 39 42 / 0.8);
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, rgb(103 232 249 / 0.95), rgb(6 182 212 / 0.95));
+  }
+}

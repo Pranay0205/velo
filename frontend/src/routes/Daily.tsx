@@ -5,12 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import type { Task } from "@/types";
 import { useTasks } from "@/hooks/useTasks";
 import UrgencyBadge from "@/components/UrgencyBadge";
+import ChatPanel from "@/components/Chat/ChatPanel";
 export default function Daily() {
   // Get tasks for the selected goal
   const { tasks, isLoading: tasksLoading, completeTask } = useTasks();
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-4 space-y-6">
       <header className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-white">Today's Focus</h1>
@@ -58,8 +59,8 @@ export default function Daily() {
         </Card>
 
         {/* Placeholder for Task list */}
-        <div className="p-8 border border-dashed border-zinc-900 rounded-xl flex flex-col items-center justify-center text-zinc-600 bg-zinc-950/50">
-          <p className="text-sm">More tasks will appear here.</p>
+        <div className="fixed bottom-6 inset-x-0 flex justify-center z-50">
+          <ChatPanel />
         </div>
       </div>
     </div>
