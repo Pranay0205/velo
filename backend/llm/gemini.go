@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
+	"github.com/Pranay0205/velo/backend/models"
 	"google.golang.org/genai"
 )
 
@@ -33,14 +35,32 @@ func NewGeminiClient() (*GeminiClient, error) {
 
 }
 
-func (gc *GeminiClient) Chat(ctx context.Context, systemPrompt string, message string) (*LLMResponse, error) {
-	resp, err := gc.client.Models.GenerateContent(ctx, os.Getenv("GEMINI_MODEL"), genai.Text(message), &genai.GenerateContentConfig{
+func (gc *GeminiClient) Chat(ctx context.Context, systemPrompt string, chatHistory []models.ChatMessage) (*LLMResponse, error) {
+	var messages []*genai.Content
+
+	for _, msg := range chatHistory {
+		var role genai.Role
+		switch msg.Role {
+		case "user":
+			role = genai.RoleUser
+		case "assistant":
+			role = genai.RoleModel
+		default:
+			role = genai.RoleUser // default to user if unknown role
+		}
+
+		messages = append(messages, genai.NewContentFromText(msg.Message, role))
+	}
+
+	resp, err := gc.client.Models.GenerateContent(ctx, os.Getenv("GEMINI_MODEL"), messages, &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(systemPrompt, "user"),
 	})
 
 	if err != nil {
 		return &LLMResponse{}, err
 	}
+
+	log.Printf("Raw Gemini response: %s", resp.Text())
 
 	validatedResponse, err := ValidateResponse(resp.Text())
 	if err != nil {
@@ -59,9 +79,11 @@ func ValidateResponse(llmResponse string) (*LLMResponse, error) {
 
 	var parsedResponse LLMResponse
 	if err := json.Unmarshal([]byte(cleaned), &parsedResponse); err != nil {
-		return &LLMResponse{}, fmt.Errorf("failed to parse LLM response: %w", err)
+		return &LLMResponse{
+			Message: cleaned,
+			Actions: []Action{},
+		}, nil
 	}
-
 	// Validate actions
 	for i, action := range parsedResponse.Actions {
 		switch action.Type {

@@ -77,6 +77,8 @@ func main() {
 
 	api.Post("/chat", chatHandler.Chat)
 
+	api.Get("/chat", chatHandler.GetChatHistory)
+
 	api.Get("/me", authHandler.Me)
 
 	app.Listen(":3000")
