@@ -19,7 +19,7 @@ export function useMessages() {
     },
   });
 
-  const { mutate: sendMessage } = useMutation({
+  const { mutate: sendMessage, isPending: isSending } = useMutation({
     mutationFn: async (content: string) => {
       logger.log(`[useMessages] Sending message: ${content}`);
       const response = await fetch("/api/chat", {
@@ -41,5 +41,5 @@ export function useMessages() {
     },
   });
 
-  return { getMessages, isMessagesLoading, sendMessage };
+  return { getMessages, isMessagesLoading, sendMessage, isSending };
 }

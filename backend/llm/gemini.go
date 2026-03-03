@@ -49,18 +49,25 @@ func (gc *GeminiClient) Chat(ctx context.Context, systemPrompt string, chatHisto
 			role = genai.RoleUser // default to user if unknown role
 		}
 
+		if strings.TrimSpace(msg.Message) == "" {
+			continue
+		}
+
 		messages = append(messages, genai.NewContentFromText(msg.Message, role))
 	}
+
+	log.Printf("[Gemini Chat] Sending chat request to Gemini with %d messages", len(messages))
 
 	resp, err := gc.client.Models.GenerateContent(ctx, os.Getenv("GEMINI_MODEL"), messages, &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(systemPrompt, "user"),
 	})
 
 	if err != nil {
+		log.Printf("[Gemini Chat] ERROR: %v", err)
 		return &LLMResponse{}, err
 	}
 
-	log.Printf("Raw Gemini response: %s", resp.Text())
+	log.Printf("[Gemini Chat] Raw Gemini response: %s", resp.Text())
 
 	validatedResponse, err := ValidateResponse(resp.Text())
 	if err != nil {
@@ -99,8 +106,24 @@ func ValidateResponse(llmResponse string) (*LLMResponse, error) {
 				action.Task.UserPriority = 2 // default to medium instead of failing
 			}
 		case "reprioritize_task":
-			if action.Reprioritize == nil {
+			if action.ReprioritizeTask == nil {
 				return &LLMResponse{}, fmt.Errorf("action %d: reprioritize missing data", i)
+			}
+		case "update_goal":
+			if action.UpdateGoalAction == nil {
+				return &LLMResponse{}, fmt.Errorf("action %d: update_goal missing data", i)
+			}
+		case "delete_goal":
+			if action.DeleteGoalAction == nil {
+				return &LLMResponse{}, fmt.Errorf("action %d: delete_goal missing data", i)
+			}
+		case "update_task":
+			if action.UpdateTaskAction == nil {
+				return &LLMResponse{}, fmt.Errorf("action %d: update_task missing data", i)
+			}
+		case "delete_task":
+			if action.DeleteTaskAction == nil {
+				return &LLMResponse{}, fmt.Errorf("action %d: delete_task missing data", i)
 			}
 		default:
 			return &LLMResponse{}, fmt.Errorf("action %d: unknown type %s", i, action.Type)

@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 import MessageList from "./MessageList";
 
 export default function ChatPanel() {
-  const { getMessages, sendMessage, isMessagesLoading } = useMessages();
+  const { getMessages, sendMessage, isMessagesLoading, isSending } = useMessages();
   const [open, setOpen] = useState(false);
 
   return (
@@ -32,12 +32,12 @@ export default function ChatPanel() {
             </div>
             {/* Input */}
             <div className="p-3 border-t border-zinc-800">
-              <ChatInput onSend={sendMessage} placeholder="Ask Velo AI for help..." />
+              <ChatInput onSend={sendMessage} placeholder="Ask Velo AI for help..." disabled={isSending} />
             </div>
           </div>
         ) : (
           <div className="cursor-pointer" onClick={() => setOpen(true)}>
-            <ChatInput placeholder="Ask Velo AI for help..." />
+            <ChatInput placeholder="Ask Velo AI for help..." disabled={isSending} />
           </div>
         )}
       </div>

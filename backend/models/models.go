@@ -76,8 +76,6 @@ type ChatMessage struct {
 }
 
 func (u *ChatMessage) BeforeCreate(tx *gorm.DB) error {
-	if u.ID == uuid.Nil {
-		u.ID = uuid.New()
-	}
+	u.ID = uuid.New()
 	return nil
 }

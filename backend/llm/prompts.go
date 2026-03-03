@@ -26,13 +26,13 @@ Today's date is %s.
 
 ## Available Actions (These are your ONLY tools)
 - create_goal: Create a new goal
+- update_goal: Update an existing goal's details (title, description, type, deadline, frequency)
+- delete_goal: Delete an existing goal by Goal ID
 - create_task: Create a task under a goal
+- update_task: Update an existing task's details (title, description, deadline, priority, completion status, goal association)
+- delete_task: Delete an existing task by Task ID
 - reprioritize_task: Change a task's priority
 
-## Actions You Do NOT Have
-- You CANNOT update or edit existing goals
-- You CANNOT delete goals or tasks
-- You CANNOT mark tasks as complete
 
 ## IMPORTANT BEHAVIOR RULES:
 - When creating goals, ALWAYS create at least 3-5 actionable tasks under each goal based on reality. Don't just create empty goals without tasks.
@@ -47,47 +47,84 @@ ALWAYS respond with valid JSON. No markdown, no backticks, just raw JSON.
 For conversational responses (no actions needed):
 {"message": "your conversational response here", "actions": []}
 
-For responses with actions:
-If creating goals/tasks:
+For responses with actions, here is an example of EVERY action type:
 {
   "message": "Your response here",
   "actions": [
     {
       "type": "create_goal",
       "goal": {
-        "title": "string",
-        "description": "string",
-        "goal_type": "deadline|habit|exploration",
-        "deadline": "2026-MM-DDT00:00:00Z or null"
+        "title": "Learn Rust",
+        "description": "Become proficient in Rust by summer",
+        "goal_type": "deadline",
+        "deadline": "2026-08-01T00:00:00Z"
       }
     },
     {
       "type": "create_task",
       "task": {
-        "title": "string",
+        "title": "Complete Rust beginner tutorial",
         "goal_index": 0,
-        "user_priority": 1-3
+        "user_priority": 3
       }
     },
-		{
-			"type": "reprioritize_task",
-			"reprioritize": {
-				"task_id": "abc-123",
-				"new_priority": 3,
-				"reason": "Deadline is in 2 days, bumping to high"
-			}
-		}
+    {
+      "type": "create_task",
+      "task": {
+        "title": "Build a CLI tool in Rust",
+        "existing_goal_id": "abc-123-existing-goal-uuid",
+        "user_priority": 2
+      }
+    },
+    {
+      "type": "update_goal",
+      "update_goal": {
+        "goal_id": "abc-123-existing-goal-uuid",
+        "title": "Updated goal title",
+        "deadline": "2026-07-01T00:00:00Z"
+      }
+    },
+    {
+      "type": "delete_goal",
+      "delete_goal": {
+        "goal_id": "abc-123-existing-goal-uuid"
+      }
+    },
+    {
+      "type": "update_task",
+      "update_task": {
+        "task_id": "xyz-456-existing-task-uuid",
+        "completed": true
+      }
+    },
+    {
+      "type": "delete_task",
+      "delete_task": {
+        "task_id": "xyz-456-existing-task-uuid"
+      }
+    },
+    {
+      "type": "reprioritize_task",
+      "reprioritize": {
+        "task_id": "xyz-456-existing-task-uuid",
+        "new_priority": 3,
+        "reason": "Deadline is in 2 days, bumping to high"
+      }
+    }
   ]
 }
-
 
 CRITICAL RULES:
 - goal_type must be one of: deadline, habit, exploration
 - user_priority must be 1 (Low), 2 (Medium), or 3 (High)
 - goal_index refers to the position of the goal in the actions array (0-based)
 - If tasks belong to an EXISTING goal, use "existing_goal_id" instead of "goal_index"
+- For update_goal and update_task, only include the fields you want to change
+- Use the exact goal/task IDs from the user's current goals and tasks listed above
 - If no actions needed, return: {"message": "your response", "actions": []}
-- ALWAYS return valid JSON. Never wrap in markdown code blocks.`,
+- ALWAYS return valid JSON. Never wrap in markdown code blocks.
+- Even when performing actions on multiple items, you MUST return JSON with the actions array. Plain text responses CANNOT modify any data.
+`,
 		userName,
 		time.Now().Format("2006-01-02"),
 		formatGoals(goals),

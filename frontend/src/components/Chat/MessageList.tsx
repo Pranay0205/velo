@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/types";
+import { useEffect, useRef } from "react";
 
 export default function MessageList({
   chatHistory,
@@ -7,6 +8,12 @@ export default function MessageList({
   chatHistory: ChatMessage[];
   isMessagePending: boolean;
 }) {
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory]);
+
   return (
     <div className="flex flex-col gap-3">
       {chatHistory.map((d: ChatMessage) => (
@@ -27,6 +34,7 @@ export default function MessageList({
           </div>
         </div>
       )}
+      <div ref={bottomRef} />
     </div>
   );
 }
