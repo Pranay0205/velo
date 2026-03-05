@@ -9,7 +9,7 @@ import * as z from "zod";
 import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const loginScheme = z.object({
   email: z.string().email("Invalid email address"),
@@ -28,6 +28,7 @@ export default function Login() {
   });
 
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   type LoginResponse = {
     email: string;
@@ -52,10 +53,11 @@ export default function Login() {
       const result = await response.json();
       return result.data;
     },
-    onSuccess: (data: LoginResponse) => {
+    onSuccess: async (data: LoginResponse) => {
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
       toast.success(`Welcome back, ${data.name}!`);
       logger.log("Login response:", data);
-      navigate("/");
+      navigate("/", { replace: true });
     },
     onError: (error: Error) => {
       toast.error("Login failed. Please check your credentials and try again.");

@@ -53,6 +53,8 @@ func main() {
 
 	app.Post("/api/login", authHandler.Login)
 
+	app.Post("/api/logout", authHandler.Logout)
+
 	app.Post("/api/signup", authHandler.Signup)
 
 	api := app.Group("/api", middleware.AuthMiddleware(os.Getenv("JWT_SECRET")))
