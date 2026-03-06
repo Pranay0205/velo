@@ -107,8 +107,13 @@ export function useTasks(goalId?: string) {
   });
 
   const sortedTasks = [...(tasks ?? [])].sort((a: Task, b: Task) => {
-    if (a.is_completed !== b.is_completed) return Number(a.is_completed) - Number(b.is_completed);
-    return b.user_priority - a.user_priority; // higher priority first
+    if (a.is_completed !== b.is_completed) {
+      return Number(a.is_completed) - Number(b.is_completed);
+    }
+    if (a.user_priority !== b.user_priority) {
+      return b.user_priority - a.user_priority;
+    }
+    return b.ai_urgency - a.ai_urgency;
   });
 
   logger.log(

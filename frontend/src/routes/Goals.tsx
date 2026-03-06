@@ -300,7 +300,14 @@ export default function Goals() {
               />
               <CardHeader className="flex flex-row justify-between items-start">
                 <h2 className="text-white font-medium">{goal.title}</h2>
-                <Button variant="ghost" size="icon" onClick={() => deleteGoal(goal.id)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteGoal(goal.id);
+                  }}
+                >
                   <Trash2 className="h-4 w-4 text-red-400" />
                 </Button>
               </CardHeader>
