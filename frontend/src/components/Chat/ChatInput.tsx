@@ -1,3 +1,5 @@
+import { Send } from "lucide-react";
+
 type ChatInputProps = {
   placeholder?: string;
   onSend?: (message: string) => void;
@@ -30,6 +32,7 @@ export default function ChatInput({
           type="text"
           placeholder={placeholder}
           disabled={disabled}
+          autoComplete="off"
           className="flex-1 px-4 py-2 rounded-lg bg-zinc-800/80 border border-zinc-700 text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-80"
         />
         <button
@@ -37,7 +40,7 @@ export default function ChatInput({
           disabled={disabled}
           className="px-4 py-2 rounded-lg bg-cyan-500 text-black font-semibold hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          Send
+          <Send className="h-4 w-4" />
         </button>
       </div>
     </form>

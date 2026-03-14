@@ -29,7 +29,7 @@ export default function Daily() {
       </header>
 
       <div className="grid gap-4">
-        <Card className="bg-zinc-900/50 border-zinc-800 backdrop-blur-sm overflow-hidden shadow-2xl">
+        <Card className="bg-zinc-900 border-zinc-800 backdrop-blur-sm overflow-hidden shadow-2xl">
           {tasksLoading ? (
             <CardContent>
               <p className="text-zinc-500 text-sm p-4">Loading tasks...</p>
@@ -42,17 +42,15 @@ export default function Daily() {
                     key={task.id}
                     className="group relative overflow-hidden flex items-center bg-zinc-900/50 backdrop-blur-sm"
                   >
-                    {/* Checkbox - Fixed Block */}
-                    <div className="pl-4 z-20 shrink-0 bg-zinc-900/50 backdrop-blur-sm self-stretch flex items-center pr-2">
-                      <Checkbox
-                        checked={task.is_completed}
-                        onClick={() => completeTask({ taskId: task.id, isComplete: task.is_completed })}
-                        className="border-cyan-500 data-[state=checked]:bg-cyan-500 data-[state=checked]:text-black"
-                      />
-                    </div>
-
                     {/* Task Content - Slides on hover */}
-                    <div className="flex-1 flex items-center justify-between min-w-0 transition-transform duration-300 ease-out group-hover:-translate-x-12 pr-4 pl-1 py-3 z-10">
+                    <div className="flex-1 flex items-center justify-between min-w-0 transition-transform duration-300 ease-out group-hover:-translate-x-2 pr-4 pl-1 py-3 z-10">
+                      <div className="pl-4 shrink-0 bg-zinc-900/50 backdrop-blur-sm self-stretch flex items-center pr-4">
+                        <Checkbox
+                          checked={task.is_completed}
+                          onClick={() => completeTask({ taskId: task.id, isComplete: task.is_completed })}
+                          className="border-cyan-500 z-20 data-[state=checked]:bg-cyan-500 data-[state=checked]:text-black"
+                        />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <span
                           className={`truncate block transition-all duration-300 ${task.is_completed ? "line-through text-zinc-600" : "text-zinc-100"}`}
@@ -72,7 +70,7 @@ export default function Daily() {
                     </div>
 
                     {/* Delete Action - Revealed by slide */}
-                    <div className="absolute right-0 top-0 bottom-0 flex items-center pr-3 translate-x-12 group-hover:translate-x-0 transition-transform duration-300 ease-out">
+                    <div className="absolute right-0 top-0 bottom-0 flex items-center pr-3 translate-x-12 group-hover:translate-x-0 transition-transform duration-300 ease-out z-10">
                       <Button
                         variant="ghost"
                         size="icon"

@@ -79,6 +79,8 @@ func main() {
 
 	api.Post("/chat", chatHandler.Chat)
 
+	api.Post("/chat/execute", chatHandler.ExecuteActions)
+
 	api.Get("/chat", chatHandler.GetChatHistory)
 
 	api.Get("/me", authHandler.Me)

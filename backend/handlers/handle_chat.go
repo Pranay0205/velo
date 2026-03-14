@@ -94,16 +94,41 @@ func (h *ChatHandler) Chat(c fiber.Ctx) error {
 
 	log.Printf("[Chat] Saved assistant message to database for user %s", userID)
 
-	if err := h.executeLLMActions(userID, llmResponse.Actions); err != nil {
-		return utils.RespondError(c, fiber.StatusInternalServerError, fmt.Sprintf("Failed to execute LLM actions: %v", err))
-	}
-
-	log.Printf("[Chat] Executed LLM actions for user %s", userID)
-
 	return utils.RespondSuccess(c, fiber.StatusOK, fiber.Map{
 		"message": llmResponse.Message,
 		"actions": llmResponse.Actions,
 	})
+}
+
+func (h *ChatHandler) ExecuteActions(c fiber.Ctx) error {
+	type ExecuteActionsRequest struct {
+		Actions []llm.Action `json:"actions"`
+	}
+
+	var req ExecuteActionsRequest
+	if err := c.Bind().JSON(&req); err != nil {
+		return utils.RespondError(c, fiber.StatusBadRequest, "Invalid request body")
+	}
+
+	if len(req.Actions) == 0 {
+		return utils.RespondError(c, fiber.StatusBadRequest, "No actions to execute")
+	}
+
+	userID := c.Locals("userID").(uuid.UUID)
+
+	log.Printf("[ExecuteActions] Received %d actions to execute for user %s", len(req.Actions), userID)
+
+	if err := h.executeLLMActions(userID, req.Actions); err != nil {
+		log.Printf("[ExecuteActions] Error executing actions: %v", err)
+		return utils.RespondError(c, fiber.StatusInternalServerError, "Failed to execute actions")
+	}
+
+	log.Printf("[ExecuteActions] Successfully executed actions for user %s", userID)
+
+	return utils.RespondSuccess(c, fiber.StatusOK, fiber.Map{
+		"message": "Actions executed successfully",
+	})
+
 }
 
 // GetChatHistory retrieves the recent chat history for the authenticated user

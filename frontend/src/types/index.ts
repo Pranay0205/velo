@@ -31,6 +31,15 @@ export type ChatMessage = {
   id: string;
   user_id: string;
   message: string;
+  action: AIAction[] | null;
   role: "user" | "model";
   created_at: string;
+};
+
+export type AIAction = {
+  type: string;
+  title?: string;
+  description?: string;
+  goal?: Goal;
+  task?: Task;
 };
