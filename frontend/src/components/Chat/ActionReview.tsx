@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
 import { Sparkles, Check, X, Target, CheckSquare, Plus, Pencil, Trash2, HelpCircle } from "lucide-react";
-import type { AIAction, Goal, Task } from "@/types";
+import type { AIAction } from "@/types";
 
 type ActionReviewProps = {
   actions: AIAction[];
@@ -12,19 +12,54 @@ type ActionReviewProps = {
   isSubmitting?: boolean;
 };
 
-function getEntity(action: AIAction) {
-  if (action.goal) return { kind: "Goal" as const, payload: action.goal };
-  if (action.task) return { kind: "Task" as const, payload: action.task };
-  return { kind: "Unknown" as const, payload: action };
+// Extracts display-friendly info from any action type
+function getActionInfo(action: AIAction) {
+  const verb = action.type.split("_")[0] || "update";
+  const entity = action.type.split("_").slice(1).join("_") || "unknown";
+  const kind = entity.includes("goal") ? "Goal" : entity.includes("task") ? "Task" : "Unknown";
+
+  // Pull title from whichever sub-object exists
+  let title: string | undefined;
+  let description: string | undefined;
+  let goalType: string | undefined;
+  let priority: number | undefined;
+  let targetId: string | undefined;
+
+  if (action.goal) {
+    title = action.goal.title;
+    description = action.goal.description;
+    goalType = action.goal.goal_type;
+  } else if (action.task) {
+    title = action.task.title;
+    priority = action.task.user_priority;
+  } else if (action.update_goal) {
+    title = action.update_goal.title;
+    description = action.update_goal.description;
+    goalType = action.update_goal.goal_type;
+    targetId = action.update_goal.goal_id;
+  } else if (action.delete_goal) {
+    targetId = action.delete_goal.goal_id;
+  } else if (action.update_task) {
+    title = action.update_task.title;
+    description = action.update_task.description;
+    priority = action.update_task.user_priority;
+    targetId = action.update_task.task_id;
+  } else if (action.delete_task) {
+    targetId = action.delete_task.task_id;
+  } else if (action.reprioritize) {
+    targetId = action.reprioritize.task_id;
+    priority = action.reprioritize.new_priority;
+    description = action.reprioritize.reason;
+  }
+
+  const displayTitle =
+    title || (targetId ? `${humanize(verb)} ${kind} (${targetId.slice(0, 8)}...)` : `${humanize(verb)} ${kind}`);
+
+  return { verb, kind, title: displayTitle, description, goalType, priority, targetId };
 }
 
 function humanize(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function getVerb(type: string) {
-  const [verb] = type.split("_");
-  return verb || "update";
 }
 
 function getVerbConfig(verb: string) {
@@ -35,6 +70,8 @@ function getVerbConfig(verb: string) {
       return { className: "bg-amber-500/10 text-amber-400 border-amber-500/20", Icon: Pencil };
     case "delete":
       return { className: "bg-rose-500/10 text-rose-400 border-rose-500/20", Icon: Trash2 };
+    case "reprioritize":
+      return { className: "bg-amber-500/10 text-amber-400 border-amber-500/20", Icon: Pencil };
     default:
       return { className: "bg-blue-500/10 text-blue-400 border-blue-500/20", Icon: Plus };
   }
@@ -63,7 +100,7 @@ export default function ActionReview({
 }: ActionReviewProps) {
   return (
     <Card className="overflow-hidden border border-cyan-500/20 bg-zinc-950/80 shadow-2xl shadow-cyan-900/10 backdrop-blur-xl">
-      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-br from-cyan-500/5 via-transparent to-transparent pointer-events-none" />
 
       <CardHeader className="relative border-b border-zinc-800/50 pb-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -107,15 +144,10 @@ export default function ActionReview({
           </div>
         ) : (
           actions.map((action, i) => {
-            const { kind, payload } = getEntity(action);
-            const verb = getVerb(action.type);
-            const { className: verbClass, Icon: VerbIcon } = getVerbConfig(verb);
-            const EntityIcon = getEntityIcon(kind);
-
-            const title =
-              (payload as Goal | Task | AIAction).title || action.description || `${humanize(verb)} ${kind}`;
-
-            const priority = priorityLabel((payload as Task).user_priority);
+            const info = getActionInfo(action);
+            const { className: verbClass, Icon: VerbIcon } = getVerbConfig(info.verb);
+            const EntityIcon = getEntityIcon(info.kind);
+            const priority = priorityLabel(info.priority);
 
             return (
               <div
@@ -128,25 +160,21 @@ export default function ActionReview({
                       className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium tracking-wide ${verbClass}`}
                     >
                       <VerbIcon className="h-3 w-3" />
-                      {humanize(verb)}
+                      {humanize(info.verb)}
                     </span>
                     <span className="flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-800/80 px-2 py-0.5 text-[10px] font-medium text-zinc-300">
                       <EntityIcon className="h-3 w-3" />
-                      {kind}
+                      {info.kind}
                     </span>
-                    <h3 className="text-sm font-medium text-zinc-100 truncate flex-1">{title}</h3>
+                    <h3 className="text-sm font-medium text-zinc-100 truncate flex-1">{info.title}</h3>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-zinc-400">
-                    {(payload as Goal | Task).description && (
-                      <span className="truncate max-w-[200px] sm:max-w-[300px]">
-                        {(payload as Goal | Task).description}
-                      </span>
-                    )}
-                    {(payload as Goal).goal_type && (
+                    {info.description && <span className="truncate max-w-50 sm:max-w-75">{info.description}</span>}
+                    {info.goalType && (
                       <span className="flex items-center gap-1">
                         <span className="text-zinc-600">Type:</span>
-                        <span className="text-zinc-300">{humanize((payload as Goal).goal_type!)}</span>
+                        <span className="text-zinc-300">{humanize(info.goalType)}</span>
                       </span>
                     )}
                     {priority && (

@@ -6,7 +6,6 @@ import Signup from "./routes/Signup";
 import { Toaster } from "@/components/ui/sonner";
 import Login from "./routes/Login";
 import { ProtectedRoute } from "./components/ui/ProtectedRoute";
-import ActionReview from "./components/Chat/ActionReview";
 
 export default function App() {
   return (

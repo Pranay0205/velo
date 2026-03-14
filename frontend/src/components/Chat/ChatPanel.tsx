@@ -5,11 +5,12 @@ import ChatInput from "./ChatInput";
 import { X } from "lucide-react";
 import MessageList from "./MessageList";
 import ActionReview from "./ActionReview";
-import type { ChatMessage } from "@/types";
+import type { AIAction } from "@/types";
 
 export default function ChatPanel() {
-  const { getMessages, sendMessage, isMessagesLoading, isSending } = useMessages();
+  const { getMessages, sendMessage, isMessagesLoading, isSending, executeActions, isExecuting } = useMessages();
   const [open, setOpen] = useState(false);
+  const [pendingActions, setPendingActions] = useState<AIAction[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,6 +37,31 @@ export default function ChatPanel() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
+
+  const handleSend = async (content: string) => {
+    const result = await sendMessage(content);
+    if (result?.actions?.length) {
+      setPendingActions(result.actions);
+    }
+  };
+
+  const handleApproveAll = async (actions: AIAction[]) => {
+    await executeActions(actions);
+    setPendingActions([]);
+  };
+
+  const handleRejectAll = () => {
+    setPendingActions([]);
+  };
+
+  const handleApproveAction = async (action: AIAction, index: number) => {
+    await executeActions([action]);
+    setPendingActions((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRejectAction = (_action: AIAction, index: number) => {
+    setPendingActions((prev) => prev.filter((_, i) => i !== index));
+  };
 
   return (
     <div className="w-full max-w-4xl px-4">
@@ -77,18 +103,24 @@ export default function ChatPanel() {
 
           <div className="flex-1 overflow-y-auto chat-scrollbar p-3">
             <MessageList chatHistory={getMessages ?? []} isMessagePending={isMessagesLoading} />
-          </div>
-          <div className="p-3 border-t border-zinc-800">
-            {getMessages &&
-              getMessages.length === 0 &&
-              !isMessagesLoading &&
-              getMessages.map((message: ChatMessage) => (
-                <ActionReview key={message.id} actions={message.action ?? []} />
-              ))}
+
+            {/* ActionReview renders below messages, inside the scroll area */}
+            {pendingActions.length > 0 && (
+              <div className="mt-3">
+                <ActionReview
+                  actions={pendingActions}
+                  onApproveAll={handleApproveAll}
+                  onRejectAll={handleRejectAll}
+                  onApproveAction={handleApproveAction}
+                  onRejectAction={handleRejectAction}
+                  isSubmitting={isExecuting}
+                />
+              </div>
+            )}
           </div>
 
           <div className="p-3 border-t border-zinc-800">
-            <ChatInput onSend={sendMessage} placeholder="Ask Velo AI for help..." disabled={isSending} />
+            <ChatInput onSend={handleSend} placeholder="Ask Velo AI for help..." disabled={isSending} />
           </div>
         </div>
       </div>
