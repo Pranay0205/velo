@@ -325,7 +325,13 @@ func (h *ChatHandler) deleteGoalAction(userID uuid.UUID, data *llm.DeleteGoalAct
 		return fmt.Errorf("goal_id is required for delete_goal action")
 	}
 
-	result := h.DB.Model(&models.Goal{}).
+	result := h.DB.Where("goal_id = ? AND user_id = ?", data.GoalID, userID).Delete(&models.Task{})
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete associated tasks: %w", result.Error)
+	}
+
+	result = h.DB.Model(&models.Goal{}).
 		Where("id = ? AND user_id = ?", data.GoalID, userID).
 		Update("status", "abandoned")
 

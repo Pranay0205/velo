@@ -86,11 +86,23 @@ func ValidateResponse(llmResponse string) (*LLMResponse, error) {
 
 	var parsedResponse LLMResponse
 	if err := json.Unmarshal([]byte(cleaned), &parsedResponse); err != nil {
+		// Try to find a JSON object embedded in the text
+		if start := strings.Index(cleaned, "{"); start != -1 {
+			if end := strings.LastIndex(cleaned, "}"); end != -1 && end > start {
+				embedded := cleaned[start : end+1]
+				if err2 := json.Unmarshal([]byte(embedded), &parsedResponse); err2 == nil {
+					return &parsedResponse, nil
+				}
+			}
+		}
+
+		// True fallback — no JSON found at all
 		return &LLMResponse{
 			Message: cleaned,
 			Actions: []Action{},
 		}, nil
 	}
+
 	// Validate actions
 	for i, action := range parsedResponse.Actions {
 		switch action.Type {

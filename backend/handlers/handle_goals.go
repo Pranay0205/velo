@@ -188,7 +188,8 @@ func (g *GoalHandler) DeleteGoal(c fiber.Ctx) error {
 	}
 
 	goalID := c.Params("id")
-	result := g.DB.Where("goal_id = ?", goalID).Delete(&models.Task{})
+
+	result := g.DB.Where("goal_id = ? AND user_id = ?", goalID, userID).Delete(&models.Task{})
 
 	if result.Error != nil {
 		return utils.RespondError(c, fiber.StatusInternalServerError, "Failed to delete associated tasks")

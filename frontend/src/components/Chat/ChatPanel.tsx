@@ -106,7 +106,7 @@ export default function ChatPanel() {
 
             {/* ActionReview renders below messages, inside the scroll area */}
             {pendingActions.length > 0 && (
-              <div className="mt-3">
+              <div className="mt-3 p-3 ">
                 <ActionReview
                   actions={pendingActions}
                   onApproveAll={handleApproveAll}
